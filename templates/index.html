@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AN ESCAPE | Cinema Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #141414; color: #e5e5e5; font-family: 'Inter', sans-serif; }
+        .poster-shadow { box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .ac-box {
+            position: absolute; top: 100%; left: 0; width: 100%;
+            background-color: #1f1f1f; z-index: 100; max-height: 400px;
+            overflow-y: auto; border: 1px solid #333; border-radius: 8px;
+            margin-top: 5px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+        .ac-item {
+            display: flex; align-items: center; padding: 10px;
+            cursor: pointer; border-bottom: 1px solid #2a2a2a; transition: 0.2s;
+        }
+        .ac-item:hover { background: #2a2a2a; }
+        .ac-item img { width: 40px; height: 60px; object-fit: cover; border-radius: 4px; margin-right: 12px; }
+        .ac-item-info { display: flex; flex-direction: column; }
+        .ac-item-title { color: white; font-size: 14px; font-weight: 600; }
+
+        .glitch-ac-box { background-color: #0a0a0a; border-color: #333; }
+        .glitch-ac-item { border-color: #1a1a1a; }
+        .glitch-ac-item:hover { background: #1a1a1a; }
+
+        .zap-btn { transition: all 0.3s ease; }
+        .zap-btn:hover {
+            color: #fbbf24;
+            filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.4));
+            transform: scale(1.1);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1a1a1a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <nav class="bg-black/80 backdrop-blur-lg sticky top-0 z-50 border-b border-white/5 py-3">
+        <div class="max-w-[1400px] mx-auto px-6 flex items-center gap-6">
+            <a href="/" class="text-2xl font-extrabold text-white">AN ESCAPE</a>
+
+            <div class="flex items-center bg-white/5 rounded-full p-1 border border-white/10">
+                <a href="/?mode=live" class="px-4 py-1.5 rounded-full text-xs font-bold transition {{ 'bg-blue-600 text-white' if active_mode == 'live' else 'text-gray-400 hover:text-white' }}">VİZYON</a>
+                <a href="/?mode=archive" class="px-4 py-1.5 rounded-full text-xs font-bold transition {{ 'bg-blue-600 text-white' if active_mode == 'archive' else 'text-gray-400 hover:text-white' }}">KOLEKSİYON</a>
+            </div>
+
+            <div class="flex-1 relative flex items-center" id="searchWrapper">
+                <input type="text" id="searchInput" placeholder="Film ara..." class="w-full bg-[#2a2a2a] rounded-full px-4 pr-12 h-10 text-sm text-white outline-none focus:ring-1 focus:ring-blue-500" autocomplete="off">
+                <button onclick="startExpertTest()" class="absolute right-4 text-gray-400 zap-btn" title="Arketip Modu">
+                    <i data-lucide="zap" class="w-5 h-5 fill-current"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    {% if slider_movies %}
+    <div class="relative w-full h-[550px] overflow-hidden group bg-black">
+        <div id="slider-track" class="flex transition-transform duration-700 h-full">
+            {% for movie in slider_movies %}
+            <div class="min-w-full relative cursor-pointer h-full flex items-center justify-center overflow-hidden" onclick="openMovie('{{ movie.tmdbId }}')">
+                <img src="{{ movie.backdrop_url }}" class="absolute inset-0 w-full h-full object-cover scale-110 blur-3xl opacity-40 select-none pointer-events-none">
+                <img src="{{ movie.backdrop_url }}" class="relative z-10 max-h-[85%] object-contain shadow-[0_0_50px_rgba(0,0,0,0.9)] transition-transform duration-500 group-hover:scale-[1.02]">
+                <div class="absolute inset-0 bg-gradient-to-t from-[#141414] via-transparent to-transparent z-20"></div>
+                <div class="absolute bottom-12 left-10 md:left-20 z-30 max-w-2xl">
+                    <h1 class="text-4xl md:text-6xl font-black text-white mb-4 drop-shadow-2xl leading-tight uppercase tracking-tighter">{{ movie.title }}</h1>
+                    <div class="flex items-center gap-4">
+                        <span class="bg-yellow-500 text-black px-4 py-1.5 rounded-md text-sm font-black shadow-lg">★ {{ movie.vote_average }}</span>
+                        <span class="text-white/60 text-xs font-bold uppercase tracking-widest border-l border-white/20 pl-4">{{ 'GÜNCEL VİZYON' if active_mode == 'live' else 'KOLEKSİYON ARŞİVİ' }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <main class="max-w-[1400px] mx-auto px-6 py-10">
+        <h2 class="text-2xl font-black text-white mb-8 pl-4 border-l-4 border-blue-600 uppercase tracking-tight">{{ 'Gündemdekiler' if active_mode == 'live' else 'Film Koleksiyonu' }}</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8">
+            {% for movie in grid_movies %}
+            <div class="group cursor-pointer" onclick="openMovie('{{ movie.tmdbId }}')">
+                <div class="relative aspect-[2/3] rounded-xl overflow-hidden mb-4 shadow-2xl bg-[#1a1a1a] ring-1 ring-white/10 group-hover:ring-blue-500/50 transition-all">
+                    <img src="{{ movie.poster_url if movie.poster_url else movie.backdrop_url }}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+                    <div class="absolute top-3 right-3 bg-black/80 backdrop-blur-md px-2 py-1 rounded-lg text-[11px] font-black text-yellow-500 border border-yellow-500/30">★ {{ movie.vote_average }}</div>
+                </div>
+                <h4 class="text-white font-bold text-sm truncate group-hover:text-blue-500 transition-colors">{{ movie.title }}</h4>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <div id="movie-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="absolute inset-0 md:inset-10 bg-[#141414] md:rounded-2xl overflow-y-auto border border-white/10 max-w-[1400px] mx-auto custom-scrollbar">
+            <button onclick="closeModal()" class="absolute top-4 right-4 z-50 text-white hover:text-red-500"><i data-lucide="x" class="w-8 h-8"></i></button>
+            <div id="modal-content" class="min-h-full"></div>
+        </div>
+    </div>
+
+    <div id="expert-modal" class="fixed inset-0 z-[200] hidden bg-[#0a0a0a]/95 backdrop-blur-xl flex items-center justify-center p-4">
+        <div class="max-w-4xl w-full relative bg-[#141414] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[88vh] md:h-auto md:max-h-[90vh]">
+            <div class="p-6 border-b border-white/5 relative bg-black/40">
+                <button onclick="document.getElementById('expert-modal').classList.add('hidden')" class="absolute top-6 right-6 text-white/50 hover:text-white transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                <h2 class="text-xl font-black text-white uppercase tracking-widest mb-4">Gerçek Benliğinle Yüzleş</h2>
+                <div class="w-full bg-white/10 rounded-full h-1.5">
+                    <div id="expert-progress" class="bg-gradient-to-r from-red-500 to-purple-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div id="expert-counter" class="text-xs font-bold text-gray-500 mt-2">Soru 1 / 8</div>
+            </div>
+            <div id="expert-content" class="p-6 md:p-10 overflow-y-auto custom-scrollbar flex-1 bg-gradient-to-b from-transparent to-[#0a0a0a]"></div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function setupAutocomplete(inputEl, wrapperEl) {
+            let timeout = null;
+            inputEl.addEventListener('input', () => {
+                clearTimeout(timeout);
+                const val = inputEl.value.trim();
+                if (val.length < 2) {
+                    removeBoxes();
+                    return;
+                }
+                timeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`/suggest?q=${encodeURIComponent(val)}`);
+                        const data = await res.json();
+                        removeBoxes();
+                        if (data.length > 0) {
+                            const box = document.createElement('div');
+                            box.className = 'ac-box custom-scrollbar';
+                            wrapperEl.appendChild(box);
+                            data.forEach(item => {
+                                const div = document.createElement('div');
+                                div.className = 'ac-item';
+                                const posterSrc = (item.poster && item.poster !== "") ? item.poster : 'https://via.placeholder.com/92x138?text=No+Image';
+                                div.innerHTML = `
+                                    <img src="${posterSrc}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/92x138?text=Error'">
+                                    <div class="ac-item-info">
+                                        <span class="ac-item-title">${item.title}</span>
+                                    </div>
+                                `;
+                                div.onclick = () => {
+                                    inputEl.value = item.title;
+                                    removeBoxes();
+                                    openMovie(item.tmdbId);
+                                };
+                                box.appendChild(div);
+                            });
+                        }
+                    } catch (e) { console.error("Autocomplete error:", e); }
+                }, 300);
+            });
+        }
+
+        function removeBoxes() {
+            document.querySelectorAll('.ac-box').forEach(e => e.remove());
+        }
+
+        setupAutocomplete(document.getElementById('searchInput'), document.getElementById('searchWrapper'));
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#searchWrapper')) removeBoxes();
+        });
+
+        async function openMovie(tmdbId) {
+            document.getElementById('movie-modal').classList.remove('hidden');
+            const content = document.getElementById('modal-content');
+            content.innerHTML = '<div class="flex h-full items-center justify-center"><div class="text-white animate-pulse">Analiz ediliyor...</div></div>';
+
+            try {
+                const res = await fetch('/get_movie_details', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ tmdbId: parseInt(tmdbId) })
+                });
+                const data = await res.json();
+                const m = data.movie;
+
+                let recsHTML = data.recommendations.map(r => `
+                    <div class="cursor-pointer group" onclick="openMovie(${r.tmdbId})">
+                        <div class="aspect-[2/3] bg-[#222] rounded overflow-hidden mb-2">
+                            <img src="${r.poster}" class="w-full h-full object-cover group-hover:scale-105 transition">
+                        </div>
+                        <div class="text-[10px] text-white truncate font-bold">${r.title}</div>
+                    </div>
+                `).join('');
+
+                content.innerHTML = `
+                    <div class="relative h-[400px]">
+                        <img src="${m.backdrop || m.poster}" class="w-full h-full object-cover opacity-40">
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#141414] via-transparent"></div>
+                        <div class="absolute bottom-0 left-0 p-8 w-full">
+                            <h1 class="text-4xl font-bold text-white mb-2">${m.title}</h1>
+                            <div class="flex gap-4 text-gray-300 text-sm">
+                                <span>${m.year}</span><span class="text-yellow-500">★ ${m.rating}</span><span>${m.genres.join(', ')}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2">
+                            <h3 class="text-blue-500 font-bold mb-2 uppercase text-xs tracking-wider">Özet</h3>
+                            <p class="text-gray-300 text-sm mb-6 leading-relaxed">${m.overview}</p>
+                            <h3 class="text-blue-500 font-bold mb-2 uppercase text-xs tracking-wider">Yönetmen</h3>
+                            <div class="text-white mb-6">${m.director}</div>
+                            <h3 class="text-blue-500 font-bold mb-2 uppercase text-xs tracking-wider">Oyuncular</h3>
+                            <div class="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                                ${m.cast.map(c => `<div class="min-w-[80px] text-center"><img src="${c.photo}" class="w-16 h-16 rounded-full mx-auto mb-2 object-cover border border-white/10"><div class="text-[10px] text-gray-400">${c.name}</div></div>`).join('')}
+                            </div>
+                        </div>
+                        <div class="bg-white/5 p-6 rounded-xl border border-white/5">
+                            <h3 class="text-white font-bold mb-4 flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4 text-blue-500"></i> Benzer Filmler</h3>
+                            <div class="grid grid-cols-2 gap-4">${recsHTML}</div>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+            } catch(e) { console.error(e); closeModal(); }
+        }
+        function closeModal() { document.getElementById('movie-modal').classList.add('hidden'); }
+
+        let sIdx = 0; const trk = document.getElementById('slider-track');
+        if (trk) setInterval(() => {
+            sIdx = (sIdx + 1) % trk.children.length;
+            trk.style.transform = `translateX(-${sIdx * 100}%)`;
+        }, 5000);
+
+        const expertQuestions = 
+[
+            {
+                id: 1,
+                text: "Çalıştığın ve binlerce kişiye istihdam sağlayan dev şirketin, arka planda uzun vadede halk sağlığını tehlikeye atan bir yolsuzluk yaptığını belgesiyle öğrendin. Eğer bunu medyaya sızdırırsan şirket batacak, o yolsuzlukla hiç ilgisi olmayan binlerce masum işçi işsiz kalıp sefalet çekecek. Susarsan sistem çürük de olsa dönmeye devam edecek ve işçiler maaşını alacak. Ne yaparsın?",
+                options: [
+                    { key: 'A', text: "Belgeleri sızdırır ve sistemi ne pahasına olursa olsun havaya uçururum. Gerçek asıl önemli olandır, bedeli ne olursa olsun yozlaşmış düzen yıkılmalıdır." },
+                    { key: 'B', text: "Belgeleri imha eder ve susarım. Masumların zarar görmesindense, çarpık bir sistemin devam etmesi daha iyidir." },
+                    { key: 'C', text: "Belgeleri şantaj veya pazarlık unsuru olarak kullanarak şirketin içindeki pozisyonumu yükseltirim. Dünya zaten yozlaşmış, bari bu durumu kendi lehime kullanayım." }
+                ]
+            },
+            {
+                id: 2,
+                text: "Çalıştığın projede/iş yerinde kurallar ve işleyiş prosedürleri oldukça katıdır. Ekibinden çok sevdiğin, son zamanlarda ciddi kişisel/maddi krizler yaşayan bir çalışma arkadaşın, senden inisiyatif alıp bir kuralı sadece bir kereliğine esnetmeni, sisteme küçük bir yalan söylemeni (veya bir açığı kullanmanı) istiyor. Bu durum kimseye doğrudan zarar vermeyecek ama fark edilirse tüm ekibin güvenilirliği sarsılacak. Ne yaparsın?",
+                options: [
+                    { key: 'A', text: "Kuralı esnetir ve ona yardım ederim. Acı çeken bir bireyin durumu, soğuk ve ruhsuz sistem kurallarından daha önemlidir. Gerekirse kaosu göze alırım." },
+                    { key: 'B', text: "Kurallara bağlı kalırım ve onu reddederim. Sistem bir kişinin istisnasıyla delinecekse ortada bir düzen kalmaz, herkes için adil olan istisnasız kurallara uymaktır." },
+                    { key: 'C', text: "Kuralı kesinlikle delmem ama yöneticilere gidip durumu tamamen kendi zekamla ve inisiyatifimle çözmüşüm gibi göstererek hem sistemi korur hem de üstlerime şirin görünürüm." }
+                ]
+            },
+            {
+                id: 3,
+                text: "Kusursuz çalışan, bugüne kadar hiç yanılmamış tıbbi bir yapay zeka beyninde tedavisi olmayan bir anomali tespit etti ve %80 ihtimalle 1 yıl içinde öleceğini söyledi. Sadece tek bir seçenek var: Yan etkileri korkunç olan, kalan 1 yılını hastanede acı içinde geçirmene sebep olacak tamamen deneysel bir tedavi. Bu tedavi sana sadece %20 yaşama şansı sunuyor. Tedaviyi reddedersen, son 1 yılını sağlıklı, acısız geçireceksin ama sonunda öleceksin. Ne yaparsın?",
+                options: [
+                    { key: 'A', text: "O %20'lik ihtimal için o cehenneme girerim. Kaderin veya istatistiklerin bana biçtiği sonu kabullenmem, son nefesime kadar hayatta kalmak için savaşırım." },
+                    { key: 'B', text: "Tedaviyi reddederim. %20'lik mucizevi bir ihtimal uğruna kalan son zamanımı acı içinde heba etmem. Ölüm gerçeğini kabullenir, kalan 1 yılımı sevdiklerimle paylaşarak yaşarım." },
+                    { key: 'C', text: "Bu gerçeği herkesten gizlerim. Ne acı çekerim ne de insanların bana acımasına izin veririm. Kalan vaktimi sadece kendi hazlarım ve dünyevi zevklerim için tüketirim." }
+                ]
+            },
+            {
+                id: 4,
+                text: "Geceni gündüzüne katarak hazırladığın, tüm benliğini ve aylarını verdiğin devasa bir proje, tamamen senin kontrolün dışındaki bürokratik dengeler ve soğuk gerekçelerle tek kalemde çöpe atıldı. O an, bu devasa mekanizmanın içinde sadece bir dişli olduğunu hissettin. Önünde yeni bir şeyler üretmek için bir yol var ama aynı katı ve değişmez duvarlara çarpma ihtimalin yine çok yüksek. Ne yaparsın?",
+                options: [
+                    { key: 'A', text: "Evrenin veya kurumların bu katı yapısına boyun eğmem. Emeklerim çöpe gitmiş olsa bile inatla yeniden başlar, o duvarı yıkana kadar kendi irademle yeni bir olasılık yaratmak için savaşırım." },
+                    { key: 'B', text: "Çırpınmayı bırakırım. Sistemin değişmez kuralları olduğunu kabul edip kendimi olayların öznesi olmaktan çıkarır, sadece olan biteni izleyen soğukkanlı bir gözlemciye dönüşürüm." },
+                    { key: 'C', text: "Büyük ideallerin koca bir yalan olduğunu kabul ederim. Anlam aramayı bırakır, sadece anlık hazlarıma odaklanır ve bu çarpık kuralları kendi küçük çıkarlarım için manipüle etmeye başlarım." }
+                ]
+            },
+            {
+                id: 5,
+                text: "Milyonlarca insanı hızla öldüren küresel bir salgına karşı nihayet bir tedavi geliştirdin. Ancak seri üretime geçmek için dünyada sadece komada yatan ağır bir mahkumda bulunan bir omurilik sıvısı alman gerekiyor. Bu işlem mahkumu masada kesin olarak öldürecek ve adamın onay verme şansı yok. Yapmazsan dışarıdaki binlerce masum insan ölmeye devam edecek. Ne yaparsın?",
+                options: [
+                    { key: 'A', text: "Prosedürü başlatır ve o sıvıyı alırım. Bir kişinin (üstelik bir suçlunun) hayatı, kurtarılacak milyonların yanında matematiksel olarak bir hiçtir. Tarih beni katil yazacak olsa bile." },
+                    { key: 'B', text: "Ne pahasına olursa olsun o müdahaleyi yapmam. Rızası olmayan birini, binlerce kişiyi kurtarmak için bile olsa 'yedek parça' gibi kesip biçmek cinayettir ve tıbbi ahlakın çöküşüdür." },
+                    { key: 'C', text: "Müdahaleyi bizzat yapmam ama projeden istifa edip yetkiyi başkasına devrederim. Yerime geçecek olanların bunu yapacağını bilirim. Böylece milyonlar kurtulur ama benim ellerim temiz kalır." }
+                ]
+            },
+            {
+                id: 6,
+                text: "Günlerce uykusuz kalıp, satır satır işleyerek kusursuz ve eksiksiz bir final özeti/çalışma notu çıkardın. Sınava saatler kala, dönem boyunca yan gelip yatmış, hiçbir çaba göstermemiş yakın bir arkadaşın gelip senden bu notları istiyor. Eğer verirsen, senin sayende o zorlu eşiği sıfır emekle geçecek. Ne yaparsın?",
+                options: [
+                    { key: 'A', text: "Hiç tereddüt etmeden notların tamamını veririm. Bilgi bir tekel kurularak değer kazanmaz, yardım isteyen birine elimdeki imkanı sunmamak benim ahlaki çöküşüm olur." },
+                    { key: 'B', text: "Kesinlikle vermem. Herkes kendi tembelliğinin bedelini ödemelidir. Kendi zihinsel emeğimin, bir başkasının sorumsuzluğunu ödüllendirmek için kurtarma paketine dönüşmesine izin vermem." },
+                    { key: 'C', text: "Hayır diyerek kötü kişi olmam ama notların tamamını da vermem. Sadece en yüzeysel, eski veya eksik bir versiyonunu gönderirim. Böylece sosyal vitrinimi korurken emeğimi çaldırmam." }
+                ]
+            },
+            {
+                id: 7,
+                text: "Dünya nükleer bir savaşın eşiğindeyken, dahi bir lider sahte ama devasa bir küresel tehdit yaratarak milyonlarca insanı feda etti. Bu kanlı plan işe yaradı ve yeryüzüne kalıcı bir dünya barışı (ütopya) geldi. Elinde, bu barışın milyonların katledildiği devasa bir yalana dayandığını kanıtlayan tek belge var. Gerçeği haykırırsan barış çökecek ve nükleer kaos başlayacak. Susarsan, dünya bu huzur içinde yaşamaya devam edecek. Ne yaparsın?",
+                options: [
+                    { key: 'A', text: "'Kıyamet kopsa bile taviz yok.' Belgeyi anında sızdırırım. Milyonların kanı üzerine kurulan hiçbir yalan kabul edilemez. Sonuçlar yıkıcı olsa da içimdeki ateşe ve mutlak gerçeğe ihanet etmem." },
+                    { key: 'B', text: "Rakamlara ve sonuca bakarım. Milyonlar öldü ama milyarlar yaşıyor. İçimdeki o iğrenme duygusunu dondurur, bu korkunç gerçeği dünyanın rasyonel devamlılığı için sonsuza dek gömerim." },
+                    { key: 'C', text: "Belgeyi ne bugün açıklarım ne de imha ederim. İnsanlığın bir gün bu gerçekle yüzleşebilecek olgunluğa erişeceği o gelecekteki tarih sahnesine çıkması umuduyla gizlice saklarım." }
+                ]
+            },
+            {
+                id: 8,
+                text: "Uzun süredir içinde bulunduğun yapıda geçmişte birisi sana kasıtlı ve çok ağır bir haksızlık yaptı, bedelini tamamen sen ödedin ve o kişi hiçbir ceza almadı. Zaman geçti, güç dengeleri yer değiştirdi. Şimdi aynı yıkıcı durumu hiçbir bedel ödemeden onun üzerinde yaratma şansın var. Aynısını yaparsan adalet yerini bulacak ama ortamın tüm huzuru paramparça olacak. Yapmazsan, zorbalığının yanına kâr kaldığını düşünecek. Ne yaparsın?",
+                options: [
+                    { key: 'A', text: "O döngüyü kendi içimde, sessizce bitiririm. Ona aynısını yapmak geçmişteki yarama köle olmak demektir. Sistemin işleyişini veya kendi soğukkanlı bütünlüğümü anlık bir intikam hazzı için bozmam." },
+                    { key: 'B', text: "Hiç tereddüt etmeden aynısını yaparım. Adalet, yutkunarak değil; adaletsizliğin bedelini o kişiye somut olarak ödeterek sağlanır. Çevrenin bozulması veya gerilmesi umurumda değil." },
+                    { key: 'C', text: "Doğrudan masayı devirmem. Bunun yerine sadece ona bu güce sahip olduğumu ve istersem onu anında yok edebileceğimi iliklerine kadar hissettiren buz gibi ve psikolojik bir hamle yaparım." }
+                ]
+            }
+        ]
+;
+
+        let currentQIndex = 0;
+        let userAnswers = [];
+        let radarChart = null;
+
+        function startExpertTest() {
+            currentQIndex = 0;
+            userAnswers = [];
+            document.getElementById('expert-modal').classList.remove('hidden');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const container = document.getElementById('expert-content');
+            const q = expertQuestions[currentQIndex];
+            const progress = ((currentQIndex) / expertQuestions.length) * 100;
+
+            document.getElementById('expert-progress').style.width = `${progress}%`;
+            document.getElementById('expert-counter').innerText = `Soru ${currentQIndex + 1} / ${expertQuestions.length}`;
+
+            const optionsHTML = q.options.map(opt => `
+                <button onclick="selectAnswer(${q.id}, '${opt.key}')" class="w-full text-left p-5 mb-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-500/50 rounded-xl transition duration-300 group">
+                    <div class="flex items-start gap-4">
+                        <span class="font-black text-xl text-gray-600 group-hover:text-blue-500 mt-0.5">${opt.key}</span>
+                        <span class="text-sm text-gray-300 group-hover:text-white leading-relaxed">${opt.text}</span>
+                    </div>
+                </button>
+            `).join('');
+
+            container.innerHTML = `
+                <h3 class="text-lg md:text-xl font-bold text-white mb-8 leading-relaxed">${q.text}</h3>
+                <div>${optionsHTML}</div>
+            `;
+        }
+
+        function selectAnswer(qId, answerKey) {
+            userAnswers.push({ q: qId, ans: answerKey });
+            currentQIndex++;
+            if (currentQIndex < expertQuestions.length) {
+                renderQuestion();
+            } else {
+                finishTest();
+            }
+        }
+
+        function renderMatchCard(title, match) {
+            if (!match) {
+                return `
+                    <div class="bg-black/50 p-5 rounded-xl border border-white/5">
+                        <div class="text-xs text-gray-500 font-bold mb-3 uppercase tracking-wider">${title}</div>
+                        <div class="text-gray-500 text-sm">Uygun eşleşme bulunamadı.</div>
+                    </div>
+                `;
+            }
+
+            const poster = match.tmdb?.poster
+                ? `<img src="${match.tmdb.poster}" class="w-24 h-36 object-cover rounded-lg border border-white/10">`
+                : `<div class="w-24 h-36 rounded-lg border border-white/10 bg-white/5"></div>`;
+
+            return `
+                <div class="bg-black/50 p-5 rounded-xl border border-white/5">
+                    <div class="text-xs text-gray-500 font-bold mb-3 uppercase tracking-wider">${title}</div>
+                    <div class="flex gap-4 items-start">
+                        ${poster}
+                        <div class="text-left">
+                            <div class="text-white text-lg font-bold leading-tight">${match.character_name || 'Bilinmiyor'}</div>
+                            <div class="text-gray-400 text-sm mt-1">${match.source_title || ''}</div>
+                            <div class="text-gray-500 text-xs mt-3">Mesafe: ${match.distance}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function drawRadar(scores) {
+            const ctx = document.getElementById('radarChart');
+            if (!ctx) return;
+
+            if (radarChart) radarChart.destroy();
+
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Uyum', 'Ahlak', 'Varoluş', 'Karar'],
+                    datasets: [{
+                        label: 'Profilin',
+                        data: scores,
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#d1d5db'
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 100,
+                            angleLines: { color: 'rgba(255,255,255,0.12)' },
+                            grid: { color: 'rgba(255,255,255,0.12)' },
+                            pointLabels: { color: '#d1d5db', font: { size: 12, weight: 'bold' } },
+                            ticks: {
+                                color: '#9ca3af',
+                                backdropColor: 'transparent',
+                                stepSize: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function finishTest() {
+            const container = document.getElementById('expert-content');
+            document.getElementById('expert-progress').style.width = `100%`;
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-center mt-20">
+                    <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-6"></div>
+                    <p class="text-gray-400 font-bold tracking-widest uppercase animate-pulse">Psikolojik Profilin Paketleniyor...</p>
+                </div>
+            `;
+
+            try {
+                const res = await fetch('/analyze_profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ answers: userAnswers })
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    container.innerHTML = `<p class="text-red-500 text-center font-bold mt-20">${data.error}</p>`;
+                    return;
+                }
+
+                const heroPoster = data.work_poster?.poster
+                    ? `<img src="${data.work_poster.poster}" class="w-36 h-52 mx-auto rounded-xl border border-white/10 mb-6 object-cover shadow-[0_0_30px_rgba(255,255,255,0.08)]">`
+                    : `<img src="${data.archetype.img}" class="w-32 h-32 mx-auto rounded-full border-4 border-white/10 mb-6 object-cover shadow-[0_0_30px_rgba(255,255,255,0.1)]">`;
+
+                container.innerHTML = `
+                    <div class="text-center animate-fade-in mt-2">
+                        <h3 class="text-blue-500 text-xs font-black tracking-[0.2em] mb-2 uppercase">Maskesiz Arketipin</h3>
+                        <h1 class="text-3xl md:text-4xl font-black text-white mb-6">${data.archetype.name}</h1>
+
+                        ${heroPoster}
+
+                        <div class="text-white text-lg font-bold mb-1">${data.closest_character || ''}</div>
+                        <div class="text-gray-400 text-sm mb-4">${data.source_title || ''}</div>
+
+                        <p class="text-gray-300 text-sm md:text-base leading-relaxed mb-4 max-w-2xl mx-auto italic">"${data.archetype.desc}"</p>
+                        <p class="text-blue-200 text-sm md:text-base leading-relaxed mb-8 max-w-2xl mx-auto">${data.dynamic_comment || ''}</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto mb-8">
+                            ${renderMatchCard('Film Karakteri', data.film_match)}
+                            ${renderMatchCard('Dizi Karakteri', data.series_match)}
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl mx-auto items-start">
+                            <div class="bg-black/50 p-5 rounded-xl border border-white/5 text-left">
+                                <h4 class="text-xs text-gray-500 font-bold mb-4 uppercase tracking-wider text-center">Matematiksel Koordinatların (0-100)</h4>
+                                <div class="grid grid-cols-1 gap-y-3 text-xs font-mono">
+                                    <div class="flex items-center justify-between"><span class="text-gray-400 w-24">Uyum:</span> <span class="text-white font-bold bg-white/10 px-2 py-1 rounded">${data.scores[0]}</span></div>
+                                    <div class="flex items-center justify-between"><span class="text-gray-400 w-24">Ahlak:</span> <span class="text-white font-bold bg-white/10 px-2 py-1 rounded">${data.scores[1]}</span></div>
+                                    <div class="flex items-center justify-between"><span class="text-gray-400 w-24">Varoluş:</span> <span class="text-white font-bold bg-white/10 px-2 py-1 rounded">${data.scores[2]}</span></div>
+                                    <div class="flex items-center justify-between"><span class="text-gray-400 w-24">Karar:</span> <span class="text-white font-bold bg-white/10 px-2 py-1 rounded">${data.scores[3]}</span></div>
+                                </div>
+                                ${data.distance !== null && data.distance !== undefined ? `<div class="text-center text-gray-500 text-xs mt-4">En yakın mesafe: ${data.distance}</div>` : ''}
+                            </div>
+
+                            <div class="bg-black/50 p-5 rounded-xl border border-white/5">
+                                <h4 class="text-xs text-gray-500 font-bold mb-4 uppercase tracking-wider text-center">Radar Haritan</h4>
+                                <canvas id="radarChart" height="280"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                drawRadar(data.scores);
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = `<p class="text-red-500 text-center font-bold mt-20">Sunucu ile bağlantı kurulamadı.</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
