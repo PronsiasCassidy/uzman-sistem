@@ -320,7 +320,7 @@ class UserProfile:
 
 class ExpertEngine:
     def __init__(self, csv_path='data/character_axis_profiles.csv', codebook_path='templates/codebook.html'):
-        self.weights = [1.2, 1.5, 1.2, 1.0]
+        self.weights = [1.2, 1.2, 1.4, 1.0]
         self.characters = self._load_character_profiles(csv_path, codebook_path)
 
     def _load_character_profiles(self, csv_path, codebook_path):
