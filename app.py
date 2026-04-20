@@ -799,5 +799,15 @@ def analyze_profile():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/logs')
+def view_logs():
+    try:
+        with open("logs/anon_results.csv", "r", encoding="utf-8") as f:
+            return "<pre>" + f.read() + "</pre>"
+    except:
+        return "Log bulunamadı"
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5057)
