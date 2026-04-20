@@ -1,6 +1,9 @@
 import os
 import json
 import math
+import csv
+from datetime import datetime
+from pathlib import Path
 import requests
 import pandas as pd
 import numpy as np
@@ -11,6 +14,30 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 
 app = Flask(__name__)
+
+LOG_FILE = Path("logs/anon_results.csv")
+
+def save_anonymous_log(answers, scores, result):
+    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    row = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "answers": json.dumps(answers, ensure_ascii=False),
+        "uyum": scores[0],
+        "ahlak": scores[1],
+        "varolus": scores[2],
+        "karar": scores[3],
+        "archetype": result.get("name"),
+        "character": result.get("closest_character"),
+    }
+
+    file_exists = LOG_FILE.exists()
+    with open(LOG_FILE, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=row.keys())
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(row)
+
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -137,14 +164,63 @@ def get_work_match_from_title(title, preferred_media_type=None):
     }
 
 SCENARIO_VECTORS = {
-    1: {'A': [30, 5, 0, -5], 'B': [-30, 0, 0, 5], 'C': [-10, -25, 0, 10]},
-    2: {'A': [18, 5, 0, -4], 'B': [-18, 0, 0, 4], 'C': [-8, -12, 0, 8]},
-    3: {'A': [0, 0, 30, 5], 'B': [0, 5, -30, 5], 'C': [0, -20, -15, -5]},
-    4: {'A': [0, 0, 18, 4], 'B': [0, 0, -18, 4], 'C': [0, -12, -8, 0]},
-    5: {'A': [0, -30, 0, 10], 'B': [0, 30, 0, 0], 'C': [0, -15, 0, 5]},
-    6: {'A': [0, 18, 0, 0], 'B': [0, -10, 0, 4], 'C': [0, -14, 0, 6]},
-    7: {'A': [0, 8, 0, -30], 'B': [0, -8, 0, 30], 'C': [0, 5, -8, 15]},
-    8: {'A': [0, 5, 0, 18], 'B': [0, -5, 0, -18], 'C': [0, -12, 0, 10]},
+    # [uyum, ahlak, varolus, karar]
+
+    # 1) Şirket yolsuzluğu
+    1: {
+        'A': [30, 10, 0, -5],
+        'B': [-30, 2, 0, 5],
+        'C': [-10, -20, 0, 10]
+    },
+
+    # 2) Kural esnetme
+    2: {
+        'A': [18, 8, 0, -4],
+        'B': [-18, 2, 0, 4],
+        'C': [-8, -10, 0, 8]
+    },
+
+    # 3) %20 yaşama şansı
+    3: {
+        'A': [0, 2, 30, 5],
+        'B': [0, 4, -30, 5],
+        'C': [0, -15, -15, -5]
+    },
+
+    # 4) Projenin çöpe atılması
+    4: {
+        'A': [0, 2, 18, 4],
+        'B': [0, 2, -18, 4],
+        'C': [0, -10, -8, 0]
+    },
+
+    # 5) Salgın ve mahkum
+    5: {
+        'A': [0, -25, 0, 10],
+        'B': [0, 35, 0, 0],
+        'C': [0, -12, 0, 5]
+    },
+
+    # 6) Not paylaşma
+    6: {
+        'A': [0, 24, 0, 0],
+        'B': [0, -8, 0, 4],
+        'C': [0, -10, 0, 6]
+    },
+
+    # 7) Ütopik yalan
+    7: {
+        'A': [0, 12, 0, -25],
+        'B': [0, -10, 0, 25],
+        'C': [0, 4, -8, 10]
+    },
+
+    # 8) İntikam
+    8: {
+        'A': [0, 10, 0, 20],
+        'B': [0, -10, 0, -18],
+        'C': [0, -8, 0, 12]
+    }
 }
 
 ARCHETYPE_META = {
@@ -244,7 +320,7 @@ class UserProfile:
 
 class ExpertEngine:
     def __init__(self, csv_path='data/character_axis_profiles.csv', codebook_path='templates/codebook.html'):
-        self.weights = [1.0, 1.0, 1.0, 1.0]
+        self.weights = [1.2, 1.5, 1.2, 1.0]
         self.characters = self._load_character_profiles(csv_path, codebook_path)
 
     def _load_character_profiles(self, csv_path, codebook_path):
@@ -300,6 +376,8 @@ class ExpertEngine:
             print(f"❌ Codebook okuma hatası: {e}")
 
         return df
+    
+   
 
     def infer_archetype(self, scores):
         uyum, ahlak, varolus, karar = scores
@@ -377,7 +455,7 @@ class ExpertEngine:
             'distance': round(best.get('distance'), 3) if best.get('distance') is not None else None
         }
 
-print("🚀 HİBRİT SİSTEM (v5.0 - DUAL MATCH) Başlatılıyor...")
+print("🚀 HİBRİT SİSTEM (v5.0 - DUAL MATCH + ANON LOG) Başlatılıyor...")
 
 try:
     metadata = load_data_safe('tmdb_movies_metadata.csv', low_memory=False)
@@ -698,6 +776,7 @@ def analyze_profile():
             user.apply_vector(vector)
 
         result = expert_engine.get_closest(user)
+        save_anonymous_log(answers, user.scores, result)
         top_matches = expert_engine.get_top_matches(user, top_n=30)
         film_match, series_match = pick_dual_matches(top_matches)
 
