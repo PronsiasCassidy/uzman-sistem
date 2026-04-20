@@ -803,11 +803,78 @@ def analyze_profile():
 @app.route('/logs')
 def view_logs():
     try:
-        with open("logs/anon_results.csv", "r", encoding="utf-8") as f:
-            return "<pre>" + f.read() + "</pre>"
-    except:
-        return "Log bulunamadı"
+        import pandas as pd
 
+        df = pd.read_csv("logs/anon_results.csv")
+
+        # 1. En çok çıkan arketip
+        top_archetype = df['archetype'].value_counts().idxmax()
+
+        # 2. En popüler karakter
+        top_character = df['character'].value_counts().idxmax()
+
+        # 3. Ortalama skorlar
+        avg_scores = df[['uyum','ahlak','varolus','karar']].mean().round(1)
+
+        # 4. Dağılım
+        archetype_counts = df['archetype'].value_counts()
+
+        return f"""
+        <html>
+        <head>
+        <style>
+        body {{ font-family: Arial; padding: 20px; background: #111; color: white; }}
+        table {{ border-collapse: collapse; width: 100%; margin-top:20px; }}
+        th, td {{ padding: 10px; border-bottom: 1px solid #444; }}
+        th {{ background: #222; }}
+        tr:hover {{ background: #333; }}
+
+        .card {{
+            background:#222;
+            padding:15px;
+            margin-bottom:15px;
+            border-radius:10px;
+        }}
+        </style>
+        </head>
+        <body>
+
+        <h1>📊 Uzman Sistem Analiz Paneli</h1>
+
+        <div class="card">
+            <h3>🔥 En Çok Çıkan Arketip</h3>
+            <p>{top_archetype}</p>
+        </div>
+
+        <div class="card">
+            <h3>🎬 En Popüler Karakter</h3>
+            <p>{top_character}</p>
+        </div>
+
+        <div class="card">
+            <h3>📈 Ortalama İnsan</h3>
+            <p>
+            Uyum: {avg_scores['uyum']} |
+            Ahlak: {avg_scores['ahlak']} |
+            Varoluş: {avg_scores['varolus']} |
+            Karar: {avg_scores['karar']}
+            </p>
+        </div>
+
+        <div class="card">
+            <h3>📊 Arketip Dağılımı</h3>
+            {archetype_counts.to_frame().to_html()}
+        </div>
+
+        <h2>📋 Tüm Kayıtlar</h2>
+        {df.to_html(index=False)}
+
+        </body>
+        </html>
+        """
+
+    except Exception as e:
+        return f"Hata: {str(e)}"
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5057)
