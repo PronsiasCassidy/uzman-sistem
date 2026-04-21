@@ -520,6 +520,21 @@ except Exception as e:
 
 expert_engine = ExpertEngine(codebook_path='templates/codebook.html')
 
+def get_match_level(distance):
+    if distance < 15:
+        return "Çok güçlü eşleşme"
+    elif distance < 25:
+        return "İyi eşleşme"
+    elif distance < 40:
+        return "Orta eşleşme"
+    else:
+        return "Zayıf eşleşme"
+
+
+def get_similarity_percentage(distance):
+    similarity = max(0, 100 - distance)
+    return round(similarity, 1)
+
 def generate_dynamic_comment(scores):
     uyum, ahlak, varolus, karar = scores
     fragments = []
@@ -777,6 +792,9 @@ def analyze_profile():
 
         result = expert_engine.get_closest(user)
         save_anonymous_log(answers, user.scores, result)
+        distance = result.get('distance', 100)
+        match_level = get_match_level(distance)
+        similarity = get_similarity_percentage(distance)
         top_matches = expert_engine.get_top_matches(user, top_n=30)
         film_match, series_match = pick_dual_matches(top_matches)
 
@@ -791,6 +809,8 @@ def analyze_profile():
             'closest_character': result.get('closest_character'),
             'source_title': result.get('source_title'),
             'distance': result.get('distance'),
+            'match_level': match_level,
+            'similarity': similarity,
             'work_poster': work_poster,
             'film_match': film_match,
             'series_match': series_match,

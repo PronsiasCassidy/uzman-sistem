@@ -488,6 +488,8 @@
                                     <div class="flex items-center justify-between"><span class="text-gray-400 w-24">Karar:</span> <span class="text-white font-bold bg-white/10 px-2 py-1 rounded">${data.scores[3]}</span></div>
                                 </div>
                                 ${data.distance !== null && data.distance !== undefined ? `<div class="text-center text-gray-500 text-xs mt-4">En yakın mesafe: ${data.distance}</div>` : ''}
+                                ${data.match_level ? `<div class="text-center text-blue-400 text-xs mt-2">Eşleşme: ${data.match_level}</div>` : ''}
+                                ${data.similarity ? `<div class="text-center text-green-400 text-xs">Benzerlik: %${data.similarity}</div>` : ''}
                             </div>
 
                             <div class="bg-black/50 p-5 rounded-xl border border-white/5">
