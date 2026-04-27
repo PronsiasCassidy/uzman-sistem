@@ -118,18 +118,19 @@ def get_poster(tmdb_id, path=None, size="w500"):
 
 _tmdb_multi_cache = {}
 
-def search_tmdb_multi(query):
+def search_tmdb_multi(query, lang="tr-TR"):
     if not query:
         return []
-    if query in _tmdb_multi_cache:
-        return _tmdb_multi_cache[query]
+    cache_key = f"{query}_{lang}"
+    if cache_key in _tmdb_multi_cache:
+        return _tmdb_multi_cache[cache_key]
 
     url = "https://api.themoviedb.org/3/search/multi"
-    params = {"api_key": TMDB_API_KEY, "language": "tr-TR", "query": query}
+    params = {"api_key": TMDB_API_KEY, "language": lang, "query": query}
     try:
         r = requests.get(url, params=params, timeout=3)
         results = r.json().get("results", []) if r.status_code == 200 else []
-        _tmdb_multi_cache[query] = results
+        _tmdb_multi_cache[cache_key] = results
         return results
     except Exception:
         return []
@@ -138,7 +139,20 @@ def get_work_match_from_title(title, preferred_media_type=None):
     if not title:
         return None
 
-    results = search_tmdb_multi(title)
+    import re
+    # Parantez içindeki açıklamaları temizle örn: "The Matrix (1999)" -> "The Matrix"
+    clean_title = re.sub(r'\(.*?\)', '', title).strip()
+
+    # 1. Aşama: Türkçe Ara
+    results = search_tmdb_multi(clean_title, lang="tr-TR")
+    
+    # 2. Aşama: Türkçe bulamazsa İngilizce Ara
+    if not results:
+        results = search_tmdb_multi(clean_title, lang="en-US")
+        
+    # 3. Aşama: Hala bulamazsa orijinal temizlenmemiş isimle Ara (İngilizce)
+    if not results and clean_title != title:
+        results = search_tmdb_multi(title, lang="en-US")
 
     filtered = []
     for item in results:
@@ -154,7 +168,10 @@ def get_work_match_from_title(title, preferred_media_type=None):
     if not candidates:
         return None
 
-    best = candidates[0]
+    # Posteri olan sonuçlara öncelik ver
+    candidates_with_poster = [c for c in candidates if c.get("poster_path")]
+    best = candidates_with_poster[0] if candidates_with_poster else candidates[0]
+    
     poster_path = best.get("poster_path")
     return {
         "poster": f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None,
