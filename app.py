@@ -592,9 +592,9 @@ def generate_dynamic_comment(scores):
 
     return "Sen, " + ", ".join(fragments) + " bir profilsin."
 
-def pick_dual_matches(top_matches):
-    film_match = None
-    series_match = None
+def pick_dual_matches(top_matches, limit=3):
+    film_matches = []
+    series_matches = []
 
     for match in top_matches:
         source_title = match.get('source_title')
@@ -612,15 +612,18 @@ def pick_dual_matches(top_matches):
             "tmdb": tmdb_info,
         }
 
-        if tmdb_info.get("media_type") == "movie" and film_match is None:
-            film_match = enriched
-        elif tmdb_info.get("media_type") == "tv" and series_match is None:
-            series_match = enriched
+        # Zaten eklenmiş bir filmi/diziyi tekrar eklememek için kaynak adı kontrolü yapabiliriz
+        if tmdb_info.get("media_type") == "movie" and len(film_matches) < limit:
+            if not any(f["source_title"] == enriched["source_title"] for f in film_matches):
+                film_matches.append(enriched)
+        elif tmdb_info.get("media_type") == "tv" and len(series_matches) < limit:
+            if not any(s["source_title"] == enriched["source_title"] for s in series_matches):
+                series_matches.append(enriched)
 
-        if film_match and series_match:
+        if len(film_matches) >= limit and len(series_matches) >= limit:
             break
 
-    return film_match, series_match
+    return film_matches, series_matches
 
 @app.route('/')
 def index():
