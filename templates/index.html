@@ -481,11 +481,62 @@
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl mx-auto items-start">
                             <div class="bg-black/50 p-5 rounded-xl border border-white/5 text-left">
                                 <h4 class="text-xs text-gray-500 font-bold mb-4 uppercase tracking-wider text-center">Matematiksel Koordinatların (0-100)</h4>
-                                <div class="grid grid-cols-1 gap-y-3 text-xs font-mono">
-                                    <div class="flex items-center justify-between"><span class="text-gray-400 w-24">Uyum:</span> <span class="text-white font-bold bg-white/10 px-2 py-1 rounded">${data.scores[0]}</span></div>
-                                    <div class="flex items-center justify-between"><span class="text-gray-400 w-24">Ahlak:</span> <span class="text-white font-bold bg-white/10 px-2 py-1 rounded">${data.scores[1]}</span></div>
-                                    <div class="flex items-center justify-between"><span class="text-gray-400 w-24">Varoluş:</span> <span class="text-white font-bold bg-white/10 px-2 py-1 rounded">${data.scores[2]}</span></div>
-                                    <div class="flex items-center justify-between"><span class="text-gray-400 w-24">Karar:</span> <span class="text-white font-bold bg-white/10 px-2 py-1 rounded">${data.scores[3]}</span></div>
+                                <div class="grid grid-cols-1 gap-y-5 text-xs font-sans mt-2">
+                                    <div class="flex flex-col gap-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-300 font-bold tracking-wider">UYUM EKSENİ</span> 
+                                            <span class="text-white font-mono font-bold bg-white/10 px-2 py-1 rounded">${data.scores[0]}</span>
+                                        </div>
+                                        <div class="w-full bg-white/5 rounded-full h-1.5 mt-1">
+                                            <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-1000" style="width: ${data.scores[0]}%"></div>
+                                        </div>
+                                        <div class="flex justify-between text-[10px] text-gray-500 mt-0.5 font-medium">
+                                            <span>0: Düzeni Koruyan (Uyumlu)</span>
+                                            <span>100: Sistemi Yıkan (Kaotik)</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex flex-col gap-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-300 font-bold tracking-wider">AHLAK EKSENİ</span> 
+                                            <span class="text-white font-mono font-bold bg-white/10 px-2 py-1 rounded">${data.scores[1]}</span>
+                                        </div>
+                                        <div class="w-full bg-white/5 rounded-full h-1.5 mt-1">
+                                            <div class="bg-green-500 h-1.5 rounded-full transition-all duration-1000" style="width: ${data.scores[1]}%"></div>
+                                        </div>
+                                        <div class="flex justify-between text-[10px] text-gray-500 mt-0.5 font-medium">
+                                            <span>0: Pragmatik (Bencil)</span>
+                                            <span>100: Etik Duyarlı (Özgeci)</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col gap-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-300 font-bold tracking-wider">VAROLUŞ EKSENİ</span> 
+                                            <span class="text-white font-mono font-bold bg-white/10 px-2 py-1 rounded">${data.scores[2]}</span>
+                                        </div>
+                                        <div class="w-full bg-white/5 rounded-full h-1.5 mt-1">
+                                            <div class="bg-purple-500 h-1.5 rounded-full transition-all duration-1000" style="width: ${data.scores[2]}%"></div>
+                                        </div>
+                                        <div class="flex justify-between text-[10px] text-gray-500 mt-0.5 font-medium">
+                                            <span>0: Kaderci (Determinist)</span>
+                                            <span>100: Anlam Yaratan (İradeci)</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col gap-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-300 font-bold tracking-wider">KARAR EKSENİ</span> 
+                                            <span class="text-white font-mono font-bold bg-white/10 px-2 py-1 rounded">${data.scores[3]}</span>
+                                        </div>
+                                        <div class="w-full bg-white/5 rounded-full h-1.5 mt-1">
+                                            <div class="bg-yellow-500 h-1.5 rounded-full transition-all duration-1000" style="width: ${data.scores[3]}%"></div>
+                                        </div>
+                                        <div class="flex justify-between text-[10px] text-gray-500 mt-0.5 font-medium">
+                                            <span>0: Dürtüsel (Duygusal)</span>
+                                            <span>100: Stratejik (Mantıksal)</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 ${data.distance !== null && data.distance !== undefined ? `<div class="text-center text-gray-500 text-xs mt-4">En yakın mesafe: ${data.distance}</div>` : ''}
                                 ${data.match_level ? `<div class="text-center text-blue-400 text-xs mt-2">Eşleşme: ${data.match_level}</div>` : ''}

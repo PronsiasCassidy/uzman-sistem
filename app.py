@@ -166,58 +166,58 @@ def get_work_match_from_title(title, preferred_media_type=None):
 SCENARIO_VECTORS = {
     # [uyum, ahlak, varolus, karar]
 
-    # 1) Şirket yolsuzluğu  → varoluş fazla şişmesin
+    # 1) Şirket yolsuzluğu  
     1: {
-        'A': [22, 10, 3, -5],   # 6 → 3
-        'B': [-22, 0, 0, 5],    # ahlak 2 → 0 (daha nötr)
-        'C': [-10, -18, 0, 10]  # -20 → -18 (biraz yumuşatma)
+        'A': [22, 10, 3, -5],   
+        'B': [-22, 0, 0, 5],    
+        'C': [-10, -18, 0, 10]  
     },
 
     # 2) Kural esnetme  → iyi
     2: {
-        'A': [20, 8, 0, -4],    # 18 → 20 (uyum biraz açılsın)
-        'B': [-20, 0, 0, 4],    # ahlak 2 → 0
-        'C': [-10, -10, 0, 8]   # -8 → -10 (netleştirme)
+        'A': [20, 8, 0, -4],    
+        'B': [-20, 0, 0, 4],    
+        'C': [-10, -10, 0, 8]   
     },
 
-    # 3) %20 yaşama şansı → ana varoluş sorusu, iyi ama biraz yumuşat
+    # 3) %20 yaşama şansı 
     3: {
-        'A': [0, 0, 20, 5],     # 22 → 20
-        'B': [0, 0, -20, 5],    # -22 → -20
-        'C': [0, -10, -12, -5]  # -15 → -12
+        'A': [0, 0, 20, 5],     
+        'B': [0, 0, -20, 5],    
+        'C': [0, -10, -12, -5]  
     },
 
-    # 4) Projenin çöpe atılması → iyi
+    # 4) Projenin çöpe atılması 
     4: {
-        'A': [0, 0, 16, 6],     # 18 → 16
-        'B': [0, 0, -16, 2],    # ahlak 2 → 0, varoluş -18 → -16
-        'C': [0, -8, -6, 4]     # yumuşatma
+        'A': [0, 0, 16, 6],     
+        'B': [0, 0, -16, 2],    
+        'C': [0, -8, -6, 4]     
     },
 
-    # 5) Salgın → ahlak çok sertti, biraz düşür
+    # 5) Salgın 
     5: {
-        'A': [0, -22, 0, 10],   # -25 → -22
-        'B': [0, 28, 0, 0],     # 35 → 28 (çok uç olmasın)
-        'C': [0, -10, 0, 5]     # -12 → -10
+        'A': [0, -22, 0, 10],   
+        'B': [0, 28, 0, 0],     
+        'C': [0, -10, 0, 5]     
     },
 
     # 6) Not paylaşma → iyi
     6: {
-        'A': [0, 12, 0, 0],     # 14 → 12
+        'A': [0, 12, 0, 0],     
         'B': [0, -10, 0, 2],
         'C': [0, -4, 0, 6]
     },
 
-    # 7) Ütopik yalan → karar çok sertti, biraz yumuşat
+    # 7) Ütopik yalan 
     7: {
-        'A': [0, 10, 0, -18],   # -25 → -18
-        'B': [0, -8, 0, 18],    # 25 → 18
-        'C': [0, 4, -6, 10]     # varoluş -8 → -6
+        'A': [0, 10, 0, -18],   
+        'B': [0, -8, 0, 18],    
+        'C': [0, 4, -6, 10]     
     },
 
-    # 8) İntikam → varoluş biraz fazla
+    # 8) İntikam 
     8: {
-        'A': [0, 12, 3, 14],    # 6 → 3
+        'A': [0, 12, 3, 14],    
         'B': [0, -12, 0, -16],
         'C': [0, -4, 0, 10]
     }
@@ -313,6 +313,9 @@ class UserProfile:
     def apply_vector(self, vector):
         for i in range(4):
             self.scores[i] += vector[i]
+
+    def finalize_scores(self):
+        for i in range(4):
             self.scores[i] = max(0, min(100, self.scores[i]))
 
     def get_normalized(self):
@@ -790,6 +793,7 @@ def analyze_profile():
             vector = SCENARIO_VECTORS[q_id][ans]
             user.apply_vector(vector)
 
+        user.finalize_scores()
         result = expert_engine.get_closest(user)
         save_anonymous_log(answers, user.scores, result)
         distance = result.get('distance', 100)
