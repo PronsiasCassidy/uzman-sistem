@@ -112,21 +112,21 @@
 <body class="antialiased">
 
     <nav class="bg-black/80 backdrop-blur-sm md:backdrop-blur-lg sticky top-0 z-50 border-b border-white/5 py-3">
-        <div class="max-w-[1400px] mx-auto px-6 flex items-center gap-6">
-            <a href="/" class="text-2xl font-extrabold text-white">AN ESCAPE</a>
+        <div class="max-w-[1400px] mx-auto px-4 md:px-6 flex flex-wrap md:flex-nowrap items-center gap-4 md:gap-6 justify-between">
+            <a href="/" class="text-xl md:text-2xl font-extrabold text-white tracking-tighter">AN ESCAPE</a>
 
             <div class="flex items-center bg-white/5 rounded-full p-1 border border-white/10">
                 <a href="/?mode=live"
-                    class="px-4 py-1.5 rounded-full text-xs font-bold transition {{ 'bg-blue-600 text-white' if active_mode == 'live' else 'text-gray-400 hover:text-white' }}">VİZYON</a>
+                    class="px-3 md:px-4 py-1.5 rounded-full text-[10px] md:text-xs font-bold transition {{ 'bg-blue-600 text-white' if active_mode == 'live' else 'text-gray-400 hover:text-white' }}">VİZYON</a>
                 <a href="/?mode=archive"
-                    class="px-4 py-1.5 rounded-full text-xs font-bold transition {{ 'bg-blue-600 text-white' if active_mode == 'archive' else 'text-gray-400 hover:text-white' }}">KOLEKSİYON</a>
+                    class="px-3 md:px-4 py-1.5 rounded-full text-[10px] md:text-xs font-bold transition {{ 'bg-blue-600 text-white' if active_mode == 'archive' else 'text-gray-400 hover:text-white' }}">KOLEKSİYON</a>
             </div>
 
-            <div class="flex-1 relative flex items-center" id="searchWrapper">
-                <input type="text" id="searchInput" placeholder="Film ara..."
+            <div class="w-full md:w-auto md:flex-1 relative flex items-center mt-1 md:mt-0" id="searchWrapper">
+                <input type="text" id="searchInput" placeholder="Film ara veya şimşek ikonuna tıkla..."
                     class="w-full bg-[#2a2a2a] rounded-full px-4 pr-12 h-10 text-sm text-white outline-none focus:ring-1 focus:ring-blue-500"
                     autocomplete="off">
-                <button onclick="startExpertTest()" class="absolute right-4 text-gray-400 zap-btn" title="Arketip Modu">
+                <button onclick="startExpertTest()" class="absolute right-2 md:right-4 text-yellow-500 md:text-gray-400 zap-btn p-2" title="Arketip Modu">
                     <i data-lucide="zap" class="w-5 h-5 fill-current"></i>
                 </button>
             </div>
