@@ -142,6 +142,9 @@ def get_work_match_from_title(title, preferred_media_type=None):
     import re
     # Parantez içindeki açıklamaları temizle örn: "The Matrix (1999)" -> "The Matrix"
     clean_title = re.sub(r'\(.*?\)', '', title).strip()
+    
+    # "Season 1", ": Sezon 2", "- Part 3" gibi dizi alt başlıklarını temizle
+    clean_title = re.sub(r'(:|-)?\s*(Season|Sezon|Volume|Vol\.?|Part)\s*\d+.*$', '', clean_title, flags=re.IGNORECASE).strip()
 
     # 1. Aşama: Türkçe Ara
     results = search_tmdb_multi(clean_title, lang="tr-TR")
