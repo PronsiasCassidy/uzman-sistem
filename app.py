@@ -831,6 +831,12 @@ def view_logs():
 
         df = pd.read_csv("logs/anon_results.csv")
 
+        # Zaman formatını Türkiye Saati'ne (+3) çevir ve en son çözüleni en üste al
+        if 'timestamp' in df.columns:
+            df['timestamp'] = pd.to_datetime(df['timestamp']) + pd.Timedelta(hours=3)
+            df['timestamp'] = df['timestamp'].dt.strftime('%d.%m.%Y %H:%M:%S')
+            df = df.sort_values(by='timestamp', ascending=False)
+
         # 1. En çok çıkan arketip
         top_archetype = df['archetype'].value_counts().idxmax()
 
