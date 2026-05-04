@@ -17,6 +17,23 @@ app = Flask(__name__)
 
 LOG_FILE = Path("logs/anon_results.csv")
 
+import threading
+import time
+
+def clear_logs_periodically():
+    while True:
+        time.sleep(25 * 60)
+        try:
+            if LOG_FILE.exists():
+                LOG_FILE.unlink()
+                print(f"[{datetime.utcnow().isoformat()}] Log dosyasi temizlendi (25 dk).")
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            print(f"Log temizleme hatasi: {e}")
+
+threading.Thread(target=clear_logs_periodically, daemon=True).start()
+
 def save_anonymous_log(answers, scores, result):
     LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
@@ -572,21 +589,21 @@ def generate_dynamic_comment(scores):
     if ahlak >= 70:
         fragments.append("yüksek etik duyarlılığa sahip")
     elif ahlak <= 30:
-        fragments.append("amacı için sert bedelleri kabul edebilen")
+        fragments.append("çıkarlarını önceliklendiren ve gerektiğinde sert kararlar alabilen")
     else:
         fragments.append("ahlaki gri alanlarda karar veren")
 
     if varolus >= 60:
         fragments.append("iradesiyle anlam yaratmaya çalışan")
     elif varolus <= 40:
-        fragments.append("dünyaya daha mesafeli ve gerçekçi yaklaşan")
+        fragments.append("olanı kabullenen ve kaderci bir bakış açısına yakın")
     else:
         fragments.append("umut ile kabulleniş arasında gidip gelen")
 
     if karar >= 70:
         fragments.append("soğukkanlı ve stratejik")
     elif karar <= 30:
-        fragments.append("anlık ve duygusal tepkiler verebilen")
+        fragments.append("dürtüsel ve duygularıyla hareket eden")
     else:
         fragments.append("hem sezgi hem akılla hareket eden")
 
@@ -852,7 +869,12 @@ def view_logs():
     try:
         import pandas as pd
 
+        if not LOG_FILE.exists():
+            return "<html><head><style>body { font-family: Arial; padding: 20px; background: #111; color: white; }</style></head><body><h1>📊 Uzman Sistem Analiz Paneli</h1><p>Henüz log bulunmuyor veya loglar temizlendi.</p></body></html>"
+
         df = pd.read_csv("logs/anon_results.csv")
+        if df.empty:
+            return "<html><head><style>body { font-family: Arial; padding: 20px; background: #111; color: white; }</style></head><body><h1>📊 Uzman Sistem Analiz Paneli</h1><p>Henüz log bulunmuyor veya loglar temizlendi.</p></body></html>"
 
         # Zaman formatını Türkiye Saati'ne (+3) çevir ve en son çözüleni en üste al
         if 'timestamp' in df.columns:
