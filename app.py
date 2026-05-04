@@ -48,10 +48,10 @@ def save_anonymous_log(answers, scores, result):
         "character": result.get("closest_character"),
     }
 
-    file_exists = LOG_FILE.exists()
+    file_has_data = LOG_FILE.exists() and LOG_FILE.stat().st_size > 0
     with open(LOG_FILE, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=row.keys())
-        if not file_exists:
+        if not file_has_data:
             writer.writeheader()
         writer.writerow(row)
 
@@ -873,7 +873,7 @@ def view_logs():
             return "<html><head><style>body { font-family: Arial; padding: 20px; background: #111; color: white; }</style></head><body><h1>📊 Uzman Sistem Analiz Paneli</h1><p>Henüz log bulunmuyor veya loglar temizlendi.</p></body></html>"
 
         df = pd.read_csv("logs/anon_results.csv")
-        if df.empty:
+        if df.empty or 'archetype' not in df.columns:
             return "<html><head><style>body { font-family: Arial; padding: 20px; background: #111; color: white; }</style></head><body><h1>📊 Uzman Sistem Analiz Paneli</h1><p>Henüz log bulunmuyor veya loglar temizlendi.</p></body></html>"
 
         # Zaman formatını Türkiye Saati'ne (+3) çevir ve en son çözüleni en üste al
@@ -883,13 +883,13 @@ def view_logs():
             df = df.sort_values(by='timestamp', ascending=False)
 
         # 1. En çok çıkan arketip
-        top_archetype = df['archetype'].value_counts().idxmax()
+        top_archetype = df['archetype'].value_counts().idxmax() if not df['archetype'].value_counts().empty else "Bilinmiyor"
 
         # 2. En popüler karakter
-        top_character = df['character'].value_counts().idxmax()
+        top_character = df['character'].value_counts().idxmax() if not df['character'].value_counts().empty else "Bilinmiyor"
 
         # 3. Ortalama skorlar
-        avg_scores = df[['uyum','ahlak','varolus','karar']].mean().round(1)
+        avg_scores = df[['uyum','ahlak','varolus','karar']].mean().round(1) if not df.empty else {'uyum':0, 'ahlak':0, 'varolus':0, 'karar':0}
 
         # 4. Dağılım
         archetype_counts = df['archetype'].value_counts()
